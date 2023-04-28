@@ -3,7 +3,7 @@ Run meta tests on package (apply to muliple packages)
 
 """
 from pathlib import Path
-import {{cookiecutter.underscored}} as package
+import mysoc_mailchimp as package
 import toml
 
 
