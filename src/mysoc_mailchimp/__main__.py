@@ -1,4 +1,5 @@
 import datetime
+import json
 import os
 from typing import Optional
 
@@ -55,7 +56,9 @@ def assert_mailchimp_api_key_exists():
         raise click.UsageError("MAILCHIMP_API_KEY environment variable is not set")
 
 
-def output_df(df: pd.DataFrame, order_by: str, desc: bool, is_json: bool):
+def output_df(
+    df: pd.DataFrame, order_by: str, desc: bool, is_json: bool, data_item: str
+):
     """
     Print the dataframe nicely, or as a json
     """
@@ -68,7 +71,8 @@ def output_df(df: pd.DataFrame, order_by: str, desc: bool, is_json: bool):
     df = df.drop(columns=["sort_lower"])
 
     if is_json:
-        print(df.to_json(orient="records", indent=4))
+        data = {data_item: df.to_dict(orient="records")}
+        print(json.dumps(data, indent=4))
     else:
         table = df_to_table(df, Table(box=box.SIMPLE))  # type: ignore
         console.print(table)
@@ -89,7 +93,7 @@ def lists(order_by: str, desc: bool, is_json: bool):
     """
     df = mailchimp.get_lists()
     df = df.drop(columns=["id"])
-    output_df(df, order_by, desc, is_json)
+    output_df(df, order_by, desc, is_json, "lists")
 
 
 @cli.command()
@@ -106,7 +110,7 @@ def segments(list_id: str, pattern: str, order_by: str, desc: bool, is_json: boo
     # filter by pattern on name
     if pattern:
         df = df[df["name"].str.contains(pattern)]
-    output_df(df, order_by, desc, is_json)
+    output_df(df, order_by, desc, is_json, "segments")
 
 
 @cli.command()
@@ -119,7 +123,7 @@ def campaigns(order_by: str, desc: bool, is_json: bool):
     """
     df = mailchimp.get_recent_campaigns()
     df = df.drop(columns=["id"])
-    output_df(df, order_by, desc, is_json)
+    output_df(df, order_by, desc, is_json, "campaigns")
 
 
 @cli.command()
@@ -131,7 +135,7 @@ def templates(order_by: str, desc: bool, is_json: bool):
     Show current user templates
     """
     df = mailchimp.get_templates()
-    output_df(df, order_by, desc, is_json)
+    output_df(df, order_by, desc, is_json, "templates")
 
 
 @cli.command()
@@ -232,3 +236,7 @@ def main():
     """
     assert_mailchimp_api_key_exists()
     cli()
+
+
+if __name__ == "__main__":
+    main()
