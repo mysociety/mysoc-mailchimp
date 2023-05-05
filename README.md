@@ -5,7 +5,19 @@ CLI for common mailchimp functions.
 
 Requires `MAILCHIMP_API_KEY` to be set as an environmental variable.
 
-See options with `msmc --help`.
+
+## To run
+
+Install the package:
+
+```
+pip install git+https://github.com/mysociety/mysoc-mailchimp
+```
+
+To see options:
+```
+python -m mysoc_mailchimp --help
+```
 
 
 ## Sending blog campaign
