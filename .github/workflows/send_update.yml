@@ -1,0 +1,63 @@
+name: Update messages
+
+on:
+  workflow_dispatch:
+  schedule:
+    # run every monday at 8am
+    - cron: '0 8 * * 1'
+
+jobs:
+
+  send:
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/checkout@v3
+
+      # setup python 3.10
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10' 
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: false
+
+      - name: Setup
+        run: |
+          pip install j2cli
+          poetry install
+
+      - uses: DamianReeves/write-file-action@v1.2
+        with:
+          path: template.md.j2
+          contents: |
+            {% for item in segments %}
+            {{ item.name.replace("Interest: ", "") }}: {{ "{:,}".format(item.member_count) }}{% endfor %}
+
+      - name: Get data
+        run: |
+          python -m mysoc_mailchimp segments --pattern "Interest:" --order-by member_count --desc --json > data.json
+          python -m mysoc_mailchimp segments --list-id "mySociety Climate updates" --pattern "Interest:" --json > climate_data.json
+          # join the two files
+          jq -s '{segments: map(.segments) | add}' data.json climate_data.json > combined.json
+          # sort by member count
+          jq '.segments | sort_by(.member_count) | reverse' combined.json > sorted.json
+          # put the result back in a key
+          jq -n --argjson segments "$(cat sorted.json)" '{"segments": $segments}' > key_sorted.json
+          # generate the message
+          j2 --format=json template.md.j2 key_sorted.json > formatted_message.md
+          # take this message and put it into a json file under the key 'message'
+          jq -n --arg message "$(cat formatted_message.md)" '{"message": $message}' > payload-slack-content.json
+        env:
+          MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}
+
+      - name: Send custom JSON data to Slack workflow
+        id: slack
+        uses: slackapi/slack-github-action@v1.23.0
+        with:
+          payload-file-path: "./payload-slack-content.json"
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
