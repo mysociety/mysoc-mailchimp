@@ -8,7 +8,7 @@ from mysoc_mailchimp.scraping import get_details_from_blog
 
 def create_campaign_from_blog(
     url: str, list_unique_id: str, segment_id: int, template_id: int
-) -> str:
+) -> tuple[str, str]:
     """
     Given a mysociety blog url, create a campaign in mailchimp that uses a set template.
     Returns the 'web id' of the campaign, which is the id used in the mailchimp url.
@@ -92,4 +92,4 @@ def create_campaign_from_blog(
     response = client.campaigns.set_content(
         unique_id, {"html": html, "content_type": "html"}
     )
-    return web_id
+    return unique_id, web_id

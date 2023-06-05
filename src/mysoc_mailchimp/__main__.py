@@ -193,11 +193,13 @@ def convert_blog(
     else:
         unique_template_id = int(template_id)
 
-    new_campaign_id = create_campaign_from_blog(
+    unique_campaign_id, new_campaign_id = create_campaign_from_blog(
         url, unique_list_id, unique_segment_id, unique_template_id
     )
 
-    print(f"[green]Created campaign {new_campaign_id}[/green]")
+    print(
+        f"[green]Created {new_campaign_id} (internal id: {unique_campaign_id})[/green]"
+    )
     print(f"Url: https://us9.admin.mailchimp.com/campaigns/edit?id={new_campaign_id}")
 
     if test_email:
