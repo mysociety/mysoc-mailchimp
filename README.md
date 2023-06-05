@@ -25,11 +25,11 @@ python -m mysoc_mailchimp --help
 Can be used to automate moving a mySociety blog post into mailchimp.
 
 ```
-msmc convert-blog --url https://www.mysociety.org/2023/04/27/climate-monthnotes-mar-apr-2023/ \
-                  --list "mySociety Newsletters"
-                  --segment "Literally just Alex"
-                  --template "mySociety auto-blog"
-                  --test-email "alex@mysociety.org"
+python -m mysoc_mailchimp convert-blog --url https://www.mysociety.org/2023/04/27/climate-monthnotes-mar-apr-2023/ \
+                                       --list "mySociety Newsletters" \
+                                       --segment "Literally just Alex" \
+                                       --template "mySociety auto-blog" \
+                                       --test-email "alex@mysociety.org"
 ```
 
 You can then send after review (which will be scheduled for roughly 10-20 minutes later sso it can be reversed):
