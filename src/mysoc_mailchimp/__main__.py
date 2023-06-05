@@ -122,7 +122,6 @@ def campaigns(order_by: str, desc: bool, is_json: bool):
     Show recent campaigns
     """
     df = mailchimp.get_recent_campaigns()
-    df = df.drop(columns=["id"])
     output_df(df, order_by, desc, is_json, "campaigns")
 
 
