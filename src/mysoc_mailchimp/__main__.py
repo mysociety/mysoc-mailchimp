@@ -8,6 +8,7 @@ import rich_click as click
 from rich import box, print
 from rich.console import Console
 from rich.table import Table
+from trogon import tui
 
 from . import mailchimp
 from .send_mailing_list import create_campaign_from_blog
@@ -19,7 +20,7 @@ order_by_option = click.option(
     "--order-by", "-o", default="name", help="column to order table by"
 )
 desc_option = click.option(
-    "--desc", is_flag=True, default=False, help="flag to set to descneding order"
+    "--desc", is_flag=True, default=False, help="flag to set to descending order"
 )
 json_option = click.option(
     "--json", "is_json", is_flag=True, default=False, help="output as json"
@@ -78,6 +79,7 @@ def output_df(
         console.print(table)
 
 
+@tui()
 @click.group()
 def cli():
     pass
@@ -147,10 +149,10 @@ def edit_campaign(campaign_id: str):
     click.launch(url)
 
 
-@cli.command()
+@cli.command(name="test_email")
 @click.option("--campaign-id", "-c", help="web id of campaign")
 @click.option("--email", "-e", help="email address to send test email to")
-def test_email(campaign_id: str, email: str):
+def test_email_func(campaign_id: str, email: str):
     """
     Send a test email
     """
