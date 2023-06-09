@@ -1,6 +1,8 @@
-import requests
-from bs4 import BeautifulSoup, Tag, NavigableString
 from dataclasses import dataclass
+
+import requests
+import rich
+from bs4 import BeautifulSoup, NavigableString, Tag
 
 
 @dataclass
@@ -25,6 +27,9 @@ def get_details_from_blog(blog_url: str) -> BlogPost:
     """
     From a mySociety blog post, extract properties to put in the email
     """
+    banned_phrases = [
+        "<p>You can sign up here and you’ll get an email every time we post:</p>"
+    ]
 
     # check the url is a mySociety blog
     if not blog_url.startswith("https://www.mysociety.org"):
@@ -37,7 +42,27 @@ def get_details_from_blog(blog_url: str) -> BlogPost:
 
     blog.title = enforce_tag(soup.find("h1", class_="mid-heading")).text
 
-    blog.content = str(soup.find("div", class_="wordpress-editor-content"))
+    contents = soup.find("div", class_="wordpress-editor-content")
+
+    # remove any divs with the class "mailchimp-signup"
+    for item in contents.find_all("div", class_="mailchimp-signup"):
+        item.decompose()
+
+    # remove any items with the class "web-only"
+    for item in contents.find_all(class_="web-only"):
+        item.decompose()
+
+    # remove any paragraphs that contain the banned phrases
+    for phrase in banned_phrases:
+        for item in contents.find_all("p"):
+            if phrase in item.text:
+                item.decompose()
+
+    blog.content = str(contents)
+
+    # remove any double new lines
+    while "\n\n" in blog.content:
+        blog.content = blog.content.replace("\n\n", "\n")
 
     blog.author = enforce_tag(
         soup.find("a", class_="blog-post-meta__author-name")
