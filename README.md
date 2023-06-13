@@ -29,6 +29,7 @@ python -m mysoc_mailchimp convert-blog --url https://www.mysociety.org/2023/04/2
                                        --list "mySociety Newsletters" \
                                        --segment "Literally just Alex" \
                                        --template "mySociety auto-blog" \
+                                       --from-name "mySociety \
                                        --test-email "alex@mysociety.org"
 ```
 

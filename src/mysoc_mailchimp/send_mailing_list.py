@@ -7,7 +7,11 @@ from mysoc_mailchimp.scraping import get_details_from_blog
 
 
 def create_campaign_from_blog(
-    url: str, list_unique_id: str, segment_id: int, template_id: int
+    url: str,
+    list_unique_id: str,
+    segment_id: int,
+    template_id: int,
+    from_name: str = "",
 ) -> tuple[str, str]:
     """
     Given a mysociety blog url, create a campaign in mailchimp that uses a set template.
@@ -21,7 +25,7 @@ def create_campaign_from_blog(
     settings = {
         "subject_line": blog.title,
         "title": "[auto]" + blog.title,
-        "from_name": blog.author,
+        "from_name": from_name or blog.author,
         "reply_to": "newsletters@mysociety.org",
         "template_id": template_id,
     }
@@ -77,7 +81,7 @@ def create_campaign_from_blog(
     )
     unique_id = response["id"]
     web_id = str(response["web_id"])  # type: ignore
-    
+
     html = known_content
 
     # replace placeholders with actual content

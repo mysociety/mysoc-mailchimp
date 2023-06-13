@@ -172,8 +172,21 @@ def test_email_func(campaign_id: str, email: str):
 @click.option(
     "--test-email", "-e", default="", help="Email address to send test email to"
 )
+@click.option(
+    "--from-name",
+    "-f",
+    help="Name to use as the from details. If blank, uses the name in the blog post",
+    default="",
+    help="Name to use as the from details. If blank, uses the name in the blog post",
+    default="",
+)
 def convert_blog(
-    url: str, list_id: str, segment_id: str, template_id: str, test_email: str
+    url: str,
+    list_id: str,
+    segment_id: str,
+    template_id: str,
+    test_email: str,
+    from_name: str,
 ):
     """
     Create a campaign from the latest blog post
@@ -196,7 +209,7 @@ def convert_blog(
         unique_template_id = int(template_id)
 
     unique_campaign_id, new_campaign_id = create_campaign_from_blog(
-        url, unique_list_id, unique_segment_id, unique_template_id
+        url, unique_list_id, unique_segment_id, unique_template_id, from_name
     )
 
     print(
