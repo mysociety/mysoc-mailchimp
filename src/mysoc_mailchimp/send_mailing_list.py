@@ -77,12 +77,13 @@ def create_campaign_from_blog(
     )
     unique_id = response["id"]
     web_id = str(response["web_id"])  # type: ignore
-
+    
     html = known_content
 
     # replace placeholders with actual content
     html = html.replace("[content]", blog.content)
     html = html.replace("[main title]", blog.title)
+    html = html.replace("http://**blog-url**", url)
     html = html.replace(
         "https://mcusercontent.com/53d0d2026dea615ed488a8834/images/3cb63c42-5b40-2e48-6955-d2fbf9ed99d6.png",
         blog.image_url,
