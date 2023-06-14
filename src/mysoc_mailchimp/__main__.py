@@ -170,15 +170,13 @@ def test_email_func(campaign_id: str, email: str):
 @click.option("--segment-id", "--segment", "-s", help="Web id or name of segment")
 @click.option("--template-id", "--template", "-s", help="Web id or name of template")
 @click.option(
-    "--test-email", "-e", default="", help="Email address to send test email to"
-)
-@click.option(
     "--from-name",
     "-f",
     help="Name to use as the from details. If blank, uses the name in the blog post",
     default="",
-    help="Name to use as the from details. If blank, uses the name in the blog post",
-    default="",
+)
+@click.option(
+    "--test-email", "-e", default="", help="Email address to send test email to"
 )
 def convert_blog(
     url: str,
@@ -226,7 +224,7 @@ def convert_blog(
 @click.option("--campaign-id", "--campaign", "-c", help="web id of campaign")
 def send(campaign_id: str):
     """
-    Actually schedule for 10 minutes time, because you know.
+    Actually schedule for 10 minutes time, so there's time for second thoughts.
     """
     ten_minutes_time = datetime.datetime.now() + datetime.timedelta(minutes=10)
 
