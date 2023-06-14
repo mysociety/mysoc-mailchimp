@@ -27,7 +27,7 @@ Can be used to automate moving a mySociety blog post into mailchimp.
 ```
 python -m mysoc_mailchimp convert-blog --url https://www.mysociety.org/2023/04/27/climate-monthnotes-mar-apr-2023/ \
                                        --list "mySociety Newsletters" \
-                                       --segment "Literally just Alex" \
+                                       --segment "Interest: Democracy" \
                                        --template "mySociety auto-blog" \
                                        --from-name "mySociety \
                                        --test-email "alex@mysociety.org"
