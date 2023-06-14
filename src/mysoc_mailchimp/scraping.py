@@ -52,6 +52,10 @@ def get_details_from_blog(blog_url: str) -> BlogPost:
     for item in contents.find_all(class_="web-only"):
         item.decompose()
 
+    # remove donate box
+    for item in contents.find_all(class_="blog-post-donate"):
+        item.decompose()
+
     # remove any paragraphs that contain the banned phrases
     for phrase in banned_phrases:
         for item in contents.find_all("p"):
