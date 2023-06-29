@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import requests
 import rich
 from bs4 import BeautifulSoup, NavigableString, Tag
+from typing_extensions import assert_never
 
 
 @dataclass
@@ -17,10 +18,13 @@ def enforce_tag(item: Tag | None | NavigableString) -> Tag:
     """
     Typing assistant that throws an error if bs4 hasn't found a tag
     """
-    if isinstance(item, Tag):
-        return item
-    else:
-        raise TypeError(f"Expected Tag, got {type(item)}")
+    match item:
+        case Tag():
+            return item
+        case None | NavigableString():
+            raise TypeError(f"Expected Tag, got {type(item)}")
+        case _ as unreachable:  # type: ignore
+            assert_never(unreachable)
 
 
 def get_details_from_blog(blog_url: str) -> BlogPost:
@@ -42,7 +46,7 @@ def get_details_from_blog(blog_url: str) -> BlogPost:
 
     blog.title = enforce_tag(soup.find("h1", class_="mid-heading")).text
 
-    contents = soup.find("div", class_="wordpress-editor-content")
+    contents = enforce_tag(soup.find("div", class_="wordpress-editor-content"))
 
     # remove any divs with the class "mailchimp-signup"
     for item in contents.find_all("div", class_="mailchimp-signup"):
