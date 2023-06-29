@@ -12,6 +12,7 @@ from trogon import tui
 
 from . import mailchimp
 from .send_mailing_list import create_campaign_from_blog
+from .twfy import print_json_config
 
 console = Console()
 
@@ -166,6 +167,13 @@ def test_email_func(campaign_id: str, email: str):
 
 @cli.command()
 @click.option("--url", "-u", help="Url of mysociety.org blog post")
+@click.option(
+    "--add-campaign",
+    "-a",
+    is_flag=True,
+    help="Add utm campaign info to url",
+    default=True,
+)
 @click.option("--list-id", "--list", "-l", help="Web id or name of list")
 @click.option("--segment-id", "--segment", "-s", help="Web id or name of segment")
 @click.option("--template-id", "--template", "-s", help="Web id or name of template")
@@ -180,6 +188,7 @@ def test_email_func(campaign_id: str, email: str):
 )
 def convert_blog(
     url: str,
+    add_campaign: bool,
     list_id: str,
     segment_id: str,
     template_id: str,
@@ -189,6 +198,16 @@ def convert_blog(
     """
     Create a campaign from the latest blog post
     """
+
+    # check the url doesn't already have utm parameters in the string
+    if add_campaign:
+        if "utm_campaign" in url:
+            raise ValueError("Url already has utm parameters")
+        # add utm parameters to url
+        url = url + "?utm_source=newsletter&utm_medium=email&utm_campaign=blog"
+        # double check we haven't got two question marks
+        if url.count("?") > 1:
+            raise ValueError("Url already has parameters    ")
 
     if not list_id.isdigit():
         unique_list_id = mailchimp.list_name_to_unique_id(list_id)
@@ -243,6 +262,13 @@ def send(campaign_id: str):
     else:
         click.echo("[red]Campaign scheduling failed[/red]")
 
+@cli.command()
+@click.option("--blog-url", "-b", help="Url of mysociety.org blog post")
+def twfy_config(blog_url: str):
+    """
+    Print the config for a blog post to be added to the twfy banners
+    """
+    print_json_config(blog_url)
 
 def main():
     """

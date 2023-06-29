@@ -1,13 +1,14 @@
 from dataclasses import dataclass
 
 import requests
-import rich
 from bs4 import BeautifulSoup, NavigableString, Tag
 from typing_extensions import assert_never
 
 
 @dataclass
 class BlogPost:
+    url: str = ""
+    desc: str = ""
     title: str = ""
     author: str = ""
     content: str = ""
@@ -42,9 +43,18 @@ def get_details_from_blog(blog_url: str) -> BlogPost:
     r = requests.get(blog_url, timeout=10)
     soup = BeautifulSoup(r.text, "html.parser")
 
-    blog = BlogPost()
+    blog = BlogPost(url=blog_url)
 
     blog.title = enforce_tag(soup.find("h1", class_="mid-heading")).text
+
+    # extract social description
+    content = enforce_tag(soup.find("meta", property="og:description"))["content"]
+
+    match content:
+        case str():
+            blog.desc = content
+        case list():
+            blog.desc = content[0]
 
     contents = enforce_tag(soup.find("div", class_="wordpress-editor-content"))
 
