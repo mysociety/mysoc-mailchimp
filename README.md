@@ -25,11 +25,11 @@ python -m mysoc_mailchimp --help
 Can be used to automate moving a mySociety blog post into mailchimp.
 
 ```
-python -m mysoc_mailchimp convert-blog --url https://www.mysociety.org/2023/04/27/climate-monthnotes-mar-apr-2023/ \
+python -m mysoc_mailchimp convert-blog --url 'https://www.mysociety.org/2023/06/26/theyworkforyou-provides-essential-services-for-civil-society-and-beyond/?utm_source=theyworkforyou&utm_medium=newsletter' \
                                        --list "mySociety Newsletters" \
                                        --segment "Interest: Democracy" \
                                        --template "mySociety auto-blog" \
-                                       --from-name "mySociety \
+                                       --from-name "mySociety" \
                                        --test-email "alex@mysociety.org"
 ```
 
