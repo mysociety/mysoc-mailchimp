@@ -7,6 +7,10 @@ from typing_extensions import assert_never
 
 @dataclass
 class BlogPost:
+    """
+    Data structure for information retrieved from a mySociety blog post
+    """
+
     url: str = ""
     desc: str = ""
     title: str = ""

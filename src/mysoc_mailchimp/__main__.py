@@ -1,6 +1,7 @@
 import datetime
 import json
 import os
+from pathlib import Path
 from typing import Optional
 
 import pandas as pd
@@ -13,6 +14,7 @@ from trogon import tui
 from . import mailchimp
 from .send_mailing_list import create_campaign_from_blog
 from .twfy import print_json_config
+from .wordpress_funcs import load_blog_to_wordpress
 
 console = Console()
 
@@ -172,7 +174,7 @@ def test_email_func(campaign_id: str, email: str):
     "-a",
     is_flag=True,
     help="Add utm campaign info to url",
-    default=True,
+    default=False,
 )
 @click.option("--list-id", "--list", "-l", help="Web id or name of list")
 @click.option("--segment-id", "--segment", "-s", help="Web id or name of segment")
@@ -207,7 +209,7 @@ def convert_blog(
         url = url + "?utm_source=newsletter&utm_medium=email&utm_campaign=blog"
         # double check we haven't got two question marks
         if url.count("?") > 1:
-            raise ValueError("Url already has parameters    ")
+            raise ValueError("Url already has parameters")
 
     if not list_id.isdigit():
         unique_list_id = mailchimp.list_name_to_unique_id(list_id)
@@ -258,9 +260,10 @@ def send(campaign_id: str):
     base_url = "https://us9.admin.mailchimp.com/campaigns/edit?id="
     if result:
         print("[green]Campaign scheduled[/green]")
-        print(f"Goto: {base_url}{campaign_id} to change")
+        print(f"Go to: {base_url}{campaign_id} to change")
     else:
         click.echo("[red]Campaign scheduling failed[/red]")
+
 
 @cli.command()
 @click.option("--blog-url", "-b", help="Url of mysociety.org blog post")
@@ -269,6 +272,25 @@ def twfy_config(blog_url: str):
     Print the config for a blog post to be added to the twfy banners
     """
     print_json_config(blog_url)
+
+
+# upload wordpress blog
+@cli.command()
+@click.option("--url", "-u", help="Public google doc")
+@click.option(
+    "--unsplash-url", "-s", help="Unsplash image url (optional)", default=None
+)
+@click.option(
+    "--config", "-c", help="Path to config file (optional)", default="repower-democracy"
+)
+def wordpress_upload(url: str, unsplash_url: str | None, config: str):
+    """
+    Upload a blog post to wordpress
+    """
+    config_path = Path("config") / f"{config}.yaml"
+
+    load_blog_to_wordpress(url, unsplash_url, config_path)
+
 
 def main():
     """

@@ -1,0 +1,22 @@
+before_first_h2: |
+  <div class="web-only">
+  <hr />
+  <div>[mailchimp-signup general="suggested" democracy="required" title="Repowering Democracy" intro="Subscribe to our Repowering Democracy: our weekly newsletter on democracy and technology"]</div>
+  <hr />
+  </div>
+before_h2: |
+  <div class="web-only">
+  <hr />
+  <div>[mailchimp-signup general="suggested" democracy="required" title="" intro="Subscribe to Repowering Democracy"]</div>
+  <hr />
+  </div>
+end_of_document: |
+  <div class="web-only">
+  <hr />
+  <div>[donate content="If you'd like to see us extending our work in democracy further, please consider making a contribution."][/donate]</div>
+  <hr />
+  </div>
+categories:
+  - Repowering Democracy
+  - Democracy
+author: repoweringdemocracy

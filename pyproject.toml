@@ -24,6 +24,13 @@ rich-click = "^1.6.1"
 pandas = "^2.0.1"
 bs4 = "^0.0.1"
 trogon = "^0.4.0"
+python-unsplash = {git = "https://github.com/ajparsons/python-unsplash"}
+wordpress-api = "^1.2.9"
+ruamel-yaml = "^0.17.32"
+google-api-core = "^2.11.1"
+google-api-python-client = "^2.93.0"
+pandoc = "^2.3"
+pillow = "^10.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.1.2"
