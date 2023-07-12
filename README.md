@@ -38,7 +38,7 @@ python -m mysoc_mailchimp convert-blog --url 'https://www.mysociety.org/2023/07/
                                        --add-campaign
 ```
 
-You can then send after review (which will be scheduled for roughly 10-20 minutes later sso it can be reversed):
+You can then send after review (which will be scheduled for roughly 10-20 minutes later so it can be reversed):
 
 ```
 msmc send --campaign-id [new_campaign_id]

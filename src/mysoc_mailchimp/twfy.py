@@ -65,7 +65,7 @@ def print_json_config(blog_url: str):
     rich.print_json(annoucement_text)
 
     rich.print(
-        f"[blue] Add this here: {base_admin_url}banners [/blue]",
+        f"[blue] Add this here: {base_admin_url}banner [/blue]",
     )
 
     rich.print_json(banner_text)
