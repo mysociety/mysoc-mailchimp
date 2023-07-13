@@ -187,6 +187,16 @@ files = [
 colorama = {version = "*", markers = "platform_system == \"Windows\""}
 
 [[package]]
+name = "cobble"
+version = "0.1.3"
+description = "Create data objects"
+optional = false
+python-versions = "*"
+files = [
+    {file = "cobble-0.1.3.tar.gz", hash = "sha256:52e7f886adbe42ccc3675dd627c87f6db8f22f96b6e0754a9e642ac7dd94fa42"},
+]
+
+[[package]]
 name = "colorama"
 version = "0.4.6"
 description = "Cross-platform colored terminal text."
@@ -563,6 +573,20 @@ type = "git"
 url = "https://github.com/mailchimp/mailchimp-marketing-python.git"
 reference = "HEAD"
 resolved_reference = "3305fa45b3f436767a539c5fba9cb2b0a083d761"
+
+[[package]]
+name = "mammoth"
+version = "1.6.0"
+description = "Convert Word documents from docx to simple and clean HTML and Markdown"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+files = [
+    {file = "mammoth-1.6.0-py2.py3-none-any.whl", hash = "sha256:721f926a1f9ff3e5046fed60ddcc0e452b61af1ee02e489d68a630636ee8cf63"},
+    {file = "mammoth-1.6.0.tar.gz", hash = "sha256:7bbaeb504691fb5b34f29eea9e4ef090f220046a9c1dfba38fb98f5506f4d012"},
+]
+
+[package.dependencies]
+cobble = ">=0.1.3,<0.2"
 
 [[package]]
 name = "markdown-it-py"
@@ -1516,4 +1540,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "1851647cdbb305906070112fde2f8970827f9610c2fb0e3a2426e7854f22dacd"
+content-hash = "a1930a889596d2a3bbcbb65e5ed7f9ead8250537071f2a1d356439637adbcef9"
