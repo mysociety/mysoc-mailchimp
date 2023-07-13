@@ -15,10 +15,7 @@ from unsplash.auth import Auth
 from .gdoc import gdoc_to_html
 from .wordpress_api import BlogImage, BlogPost
 
-# WordPress API configuration
-WORDPRESS_URL = os.environ.get("WORDPRESS_URL")
-USERNAME = os.environ.get("WORDPRESS_USERNAME")
-PASSWORD = os.environ.get("WORDPRESS_PASSWORD")
+
 
 # Unsplash API configuration
 UNSPLASH_ACCESS_KEY = os.environ.get("UNSPLASH_CLIENT_ID")

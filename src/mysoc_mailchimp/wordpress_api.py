@@ -7,11 +7,10 @@ import requests
 from typing_extensions import Self
 
 # WordPress API configuration
-WORDPRESS_URL = os.environ["WORDPRESS_URL"]
-USERNAME = os.environ["WORDPRESS_USERNAME"]
-
 # Application password (5 four letter words seperated by spaces, get from profile page)
-PASSWORD = os.environ["WORDPRESS_PASSWORD"]
+WORDPRESS_URL = os.environ.get("WORDPRESS_URL")
+USERNAME = os.environ.get("WORDPRESS_USERNAME")
+PASSWORD = os.environ.get("WORDPRESS_PASSWORD")
 
 
 DraftOptions = Literal["draft", "publish", "future", "pending", "private"]
