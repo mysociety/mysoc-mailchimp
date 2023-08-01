@@ -15,8 +15,6 @@ from unsplash.auth import Auth
 from .gdoc import gdoc_to_html
 from .wordpress_api import BlogImage, BlogPost
 
-
-
 # Unsplash API configuration
 UNSPLASH_ACCESS_KEY = os.environ.get("UNSPLASH_CLIENT_ID")
 
@@ -194,7 +192,6 @@ def load_blog_to_wordpress(
 
     html = str(soup)
     html = re.sub(r"(</h\d>|</p>|</img>)", r"\1\n\n", html)
-    Path("test.html").write_text(html)
 
     # Extract images and upload them to WordPress
     images = []
