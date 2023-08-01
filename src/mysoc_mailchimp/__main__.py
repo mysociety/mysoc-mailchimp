@@ -2,7 +2,7 @@ import datetime
 import json
 import os
 from pathlib import Path
-from typing import Optional
+from typing import Optional, get_args
 
 import pandas as pd
 import rich_click as click
@@ -13,7 +13,7 @@ from trogon import tui
 
 from . import mailchimp
 from .send_mailing_list import create_campaign_from_blog
-from .twfy import print_json_config
+from .twfy import DateOptions, print_json_config
 from .wordpress_funcs import load_blog_to_wordpress
 
 console = Console()
@@ -265,13 +265,32 @@ def send(campaign_id: str):
         click.echo("[red]Campaign scheduling failed[/red]")
 
 
+def validate_date_choice(ctx: click.Context, param: click.Parameter, value: str) -> str:
+    """
+    enforce that the value is in the DateOptions enum
+    """
+    if value not in (o := get_args(DateOptions)):
+        raise click.BadParameter(
+            f"Invalid choice: '{value}'. Valid choices are: {', '.join(o)}"
+        )
+    return value
+
+
 @cli.command()
 @click.option("--blog-url", "-b", help="Url of mysociety.org blog post")
-def twfy_config(blog_url: str):
+@click.option(
+    "--start-day",
+    "-s",
+    default="tomorrow",
+    help="Date to start banner",
+    callback=validate_date_choice,
+)
+@click.option("--days-up", "-d", default=14, help="Number of days to show banner")
+def twfy_config(blog_url: str, start_day: DateOptions, days_up: int):
     """
     Print the config for a blog post to be added to the twfy banners
     """
-    print_json_config(blog_url)
+    print_json_config(blog_url, start_day, days_up)
 
 
 # upload wordpress blog

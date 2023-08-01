@@ -40,13 +40,18 @@ from __future__ import annotations
 
 import datetime
 import json
+from typing import Literal
 
 import rich
 
 from .scraping import BlogPost, get_details_from_blog
 
+DateOptions = Literal["today", "tomorrow"]
 
-def print_json_config(blog_url: str):
+
+def print_json_config(
+    blog_url: str, start: DateOptions = "tomorrow", days_up: int = 14
+):
     """
     Given a blog url, print the json config for an announcement
     """
@@ -55,8 +60,8 @@ def print_json_config(blog_url: str):
 
     base_admin_url = "https://www.theyworkforyou.com/admin/banner.php?editorial_option="
 
-    annoucement_text = convert_blog_to_announcement(blog)
-    banner_text = convert_blog_to_banner(blog)
+    annoucement_text = convert_blog_to_announcement(blog, start, days_up)
+    banner_text = convert_blog_to_banner(blog, start, days_up)
 
     rich.print(
         f"[blue] Add this here: {base_admin_url}announcements [/blue]",
@@ -71,7 +76,9 @@ def print_json_config(blog_url: str):
     rich.print_json(banner_text)
 
 
-def convert_blog_to_announcement(blog: BlogPost) -> str:
+def convert_blog_to_announcement(
+    blog: BlogPost, start: DateOptions = "tomorrow", days_up: int = 14
+) -> str:
     """
     Given a blog url, return the json for an announcement
     """
@@ -83,6 +90,18 @@ def convert_blog_to_announcement(blog: BlogPost) -> str:
         blog_url += (
             "?utm_source=theyworkforyou&utm_medium=website&utm_campaign=announcement"
         )
+
+    today = datetime.datetime.now()
+    tomorrow = today + datetime.timedelta(days=1)
+
+    if start == "today":
+        start_time = today.strftime("%Y-%m-%d")
+    elif start == "tomorrow":
+        start_time = tomorrow.strftime("%Y-%m-%d")
+    else:
+        raise ValueError("start must be 'today' or 'tomorrow'")
+
+    end_time = (tomorrow + datetime.timedelta(days=days_up)).strftime("%Y-%m-%d")
 
     announcement = {
         "title": blog.title,
@@ -97,12 +116,16 @@ def convert_blog_to_announcement(blog: BlogPost) -> str:
         "lang": "en",
         "weight": 1,
         "location": ["homepage", "sidebar"],
+        "start_time": start_time,
+        "end_time": end_time,
     }
 
     return json.dumps(announcement)
 
 
-def convert_blog_to_banner(blog: BlogPost) -> str:
+def convert_blog_to_banner(
+    blog: BlogPost, start: DateOptions = "tomorrow", days_up: int = 14
+) -> str:
     """
     Given a blog url, return the json for a banner
     """
@@ -111,6 +134,18 @@ def convert_blog_to_banner(blog: BlogPost) -> str:
 
     if "utm_campaign" not in blog_url and "?" not in blog_url:
         blog_url += "?utm_source=theyworkforyou&utm_medium=website&utm_campaign=banner"
+
+    today = datetime.datetime.now()
+    tomorrow = today + datetime.timedelta(days=1)
+
+    if start == "today":
+        start_time = today.strftime("%Y-%m-%d")
+    elif start == "tomorrow":
+        start_time = tomorrow.strftime("%Y-%m-%d")
+    else:
+        raise ValueError("start must be 'today' or 'tomorrow'")
+
+    end_time = (tomorrow + datetime.timedelta(days=days_up)).strftime("%Y-%m-%d")
 
     banner = {
         "id": "blog-" + blog_url.split("/")[-2],
@@ -121,7 +156,8 @@ def convert_blog_to_banner(blog: BlogPost) -> str:
         "weight": 1,
         "lang": "en",
         "published": True,
-        "start_time": datetime.datetime.now().strftime("%Y-%m-%d"),
+        "start_time": start_time,
+        "end_time": end_time,
     }
 
     return json.dumps(banner)
