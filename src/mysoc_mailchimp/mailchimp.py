@@ -4,6 +4,7 @@ from functools import lru_cache
 from typing import Any
 
 import mailchimp_marketing
+import numpy as np
 import pandas as pd
 import requests
 
@@ -35,6 +36,56 @@ def get_lists() -> pd.DataFrame:
     return df
 
 
+def get_recent_email_count(list_web_id: str, segment_id: str, days: int = 7) -> int:
+    """
+    Get the emails and sign up date for a list and segment
+    Get the count of the number in the last [x] days
+    """
+    client = get_client()
+
+    try:
+        list_id = int(list_web_id)
+        is_web_id = True
+    except ValueError:
+        is_web_id = False
+    if is_web_id:
+        list_id = list_web_id_to_unique_id(list_web_id)
+    else:
+        list_id = list_name_to_unique_id(list_web_id)
+
+    dfs = []
+    # paginate until we have all emails
+    offset = 0
+    while True:
+        response: dict[str, Any] = client.lists.get_segment_members_list(
+            list_id,
+            segment_id,
+            count=1000,
+            offset=offset,
+        )
+        df = pd.DataFrame(response["members"])
+        dfs.append(df)
+        if len(df) < 1000:
+            break
+        offset += 1000
+    df = pd.concat(dfs)
+
+    # create new timestamp_joined from timestamp_signup and timestamp_opt if timestamp_signup is empty
+    df["timestamp_joined"] = np.where(
+        df["timestamp_signup"].isna() | df["timestamp_signup"].isin([None, ""]),
+        df["timestamp_opt"],  # type: ignore
+        df["timestamp_signup"],  # type: ignore
+    )
+    df["timestamp_joined"] = pd.to_datetime(df["timestamp_joined"]).dt.date
+    # get the cutoff date as a date object
+    cutoff = (datetime.date.today() - datetime.timedelta(days=days)).isoformat()
+    mask: pd.Series[bool] = df["timestamp_joined"].apply(
+        lambda x: x.isoformat() > cutoff
+    )
+    df = df[mask]
+    return len(df)
+
+
 def get_segments(list_web_id: str) -> pd.DataFrame:
     """
     Get segements of a list as a dataframe
@@ -51,7 +102,7 @@ def get_segments(list_web_id: str) -> pd.DataFrame:
     else:
         list_id = list_name_to_unique_id(list_web_id)
     response: dict[str, Any] = client.lists.list_segments(list_id, count=1000)
-    df = pd.DataFrame(response["segments"])
+    df = pd.DataFrame(response["segments"])  # type: ignore
     df = df[["id", "name", "member_count"]]
     df["id"] = list_web_id + ":" + df["id"].astype(str)
     return df

@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   schedule:
     # run every monday at 8am
-    - cron: '0 8 * * 1'
+    - cron: '0 7 * * 1'
 
 jobs:
 
@@ -35,12 +35,11 @@ jobs:
           path: template.md.j2
           contents: |
             {% for item in segments %}
-            {{ item.name.replace("Interest: ", "") }}: {{ "{:,}".format(item.member_count) }}{% endfor %}
-
+            {{ item.name.replace("Interest: ", "") }}: {{ "{:,}".format(item.member_count) }} (last seven days: {{ item.recent_email_count }}) {% endfor %}
       - name: Get data
         run: |
-          python -m mysoc_mailchimp segments --pattern "Interest:" --order-by member_count --desc --json > data.json
-          python -m mysoc_mailchimp segments --list-id "mySociety Climate updates" --pattern "Interest:" --json > climate_data.json
+          python -m mysoc_mailchimp segments --pattern "Interest:" --include-recent-count --order-by member_count --desc --json > data.json
+          python -m mysoc_mailchimp segments --list-id "mySociety Climate updates"  --include-recent-count --pattern "Interest:" --json > climate_data.json
           # join the two files
           jq -s '{segments: map(.segments) | add}' data.json climate_data.json > combined.json
           # sort by member count

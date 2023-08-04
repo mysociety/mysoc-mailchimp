@@ -36,7 +36,6 @@ def df_to_table(
     show_index: bool = False,
     index_name: Optional[str] = None,
 ) -> Table:
-
     if show_index:
         index_name = str(index_name) if index_name else ""
         rich_table.add_column(index_name)
@@ -104,10 +103,18 @@ def lists(order_by: str, desc: bool, is_json: bool):
 @cli.command()
 @click.option("--list-id", "-l", default="425649", help="web id or name of list")
 @click.option("--pattern", "-p", default="", help="pattern to filter segments by")
+@click.option("--include-recent-count", "-r", is_flag=True, default=False)
 @order_by_option
 @desc_option
 @json_option
-def segments(list_id: str, pattern: str, order_by: str, desc: bool, is_json: bool):
+def segments(
+    list_id: str,
+    pattern: str,
+    order_by: str,
+    include_recent_count: bool,
+    desc: bool,
+    is_json: bool,
+):
     """
     Show segments of newsletter
     """
@@ -115,6 +122,12 @@ def segments(list_id: str, pattern: str, order_by: str, desc: bool, is_json: boo
     # filter by pattern on name
     if pattern:
         df = df[df["name"].str.contains(pattern)]
+
+    if include_recent_count:
+        # add recent_email_count
+        df["recent_email_count"] = df["id"].apply(
+            lambda x: mailchimp.get_recent_email_count(list_id, x.split(":")[1])
+        )
     output_df(df, order_by, desc, is_json, "segments")
 
 

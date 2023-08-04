@@ -35,11 +35,11 @@ jobs:
           path: template.md.j2
           contents: |
             {% for item in segments %}
-            {{ item.name.replace("Interest: ", "") }}: {{ "{:,}".format(item.member_count) }}{% endfor %}
+            {{ item.name.replace("Interest: ", "") }}: {{ "{:,}".format(item.member_count) }} (last seven days: {{ item.recent_email_count }}) {% endfor %}
 
       - name: Get data
         run: |
-          python -m mysoc_mailchimp segments --pattern "Interest: Demo" --order-by member_count --desc --json > data.json
+          python -m mysoc_mailchimp segments --pattern "Interest: Demo" --include-recent-count --order-by member_count --desc --json > data.json
           # join the two files
           # generate the message
           j2 --format=json template.md.j2 data.json > formatted_message.md
