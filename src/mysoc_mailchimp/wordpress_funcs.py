@@ -115,7 +115,6 @@ def inject_content(
 
 
 def get_unsplash_image(url: str) -> UnsplashData:
-
     # Extract photo ID from the Unsplash URL
     photo_id = url.split("/")[-1]
 

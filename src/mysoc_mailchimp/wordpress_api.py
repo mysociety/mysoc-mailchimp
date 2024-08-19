@@ -122,7 +122,6 @@ class BlogPost:
     featured_media: BlogImage | None = None
 
     def publish(self) -> int:
-
         username_id = get_author_id_from_username(self.author_username)
         category_ids = get_category_id_from_name(self.categories)
 

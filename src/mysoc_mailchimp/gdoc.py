@@ -28,7 +28,6 @@ def enforce_tag(item: Tag | None | NavigableString) -> Tag:
 
 
 def get_docx_from_file_id(file_id: str, working_dir: Path) -> Path:
-
     creds = json.loads(os.environ["GOOGLE_CLIENT_JSON"])
 
     credentials = service_account.Credentials.from_service_account_info(creds)
