@@ -1,32 +1,37 @@
 import datetime
 import hashlib
-import os
 from functools import lru_cache
-from typing import Any, NamedTuple, NewType, Optional
+from typing import Any, NamedTuple, NewType, Optional, TypedDict
 
 import mailchimp_marketing
 import numpy as np
 import pandas as pd
 import requests
 
+
+class MailChimpApiKey(NamedTuple):
+    api_key: str
+    server: str
+
+
 InternalListID = NewType("InternalListID", str)
 
 
-def get_client() -> mailchimp_marketing.Client:
+def get_client(api_key: MailChimpApiKey) -> mailchimp_marketing.Client:  # type: ignore
     """
     Get the mailchimp api client
     """
     client = mailchimp_marketing.Client()
-    client.set_config({"api_key": os.environ.get("MAILCHIMP_API_KEY"), "server": "us9"})
-    return client
+    client.set_config({"api_key": api_key.api_key, "server": api_key.server})
+    return client  # type: ignore
 
 
 @lru_cache
-def get_lists() -> pd.DataFrame:
+def get_lists(api_key: MailChimpApiKey) -> pd.DataFrame:
     """
     Get dataframe of all lists in the account.
     """
-    client = get_client()
+    client = get_client(api_key)
     response: dict[str, Any] = client.lists.get_all_lists(count=1000)
     df = pd.DataFrame(response["lists"])
 
@@ -39,12 +44,14 @@ def get_lists() -> pd.DataFrame:
     return df
 
 
-def get_recent_email_count(list_web_id: str, segment_id: str, days: int = 7) -> int:
+def get_recent_email_count(
+    api_key: MailChimpApiKey, list_web_id: str, segment_id: str, days: int = 7
+) -> int:
     """
     Get the emails and sign up date for a list and segment
     Get the count of the number in the last [x] days
     """
-    client = get_client()
+    client = get_client(api_key)
 
     try:
         list_id = int(list_web_id)
@@ -52,9 +59,9 @@ def get_recent_email_count(list_web_id: str, segment_id: str, days: int = 7) -> 
     except ValueError:
         is_web_id = False
     if is_web_id:
-        list_id = list_web_id_to_unique_id(list_web_id)
+        list_id = list_web_id_to_unique_id(api_key, list_web_id)
     else:
-        list_id = list_name_to_unique_id(list_web_id)
+        list_id = list_name_to_unique_id(api_key, list_web_id)
 
     dfs = []
     # paginate until we have all emails
@@ -89,11 +96,12 @@ def get_recent_email_count(list_web_id: str, segment_id: str, days: int = 7) -> 
     return len(df)
 
 
-def get_segments(list_web_id: str) -> pd.DataFrame:
+@lru_cache
+def get_segments(api_key: MailChimpApiKey, list_web_id: str) -> pd.DataFrame:
     """
     Get segements of a list as a dataframe
     """
-    client = get_client()
+    client = get_client(api_key)
     # if list_web_id can be converted to an int, it's a webid, otherwise it's a name
     try:
         list_id = int(list_web_id)
@@ -101,9 +109,9 @@ def get_segments(list_web_id: str) -> pd.DataFrame:
     except ValueError:
         is_web_id = False
     if is_web_id:
-        list_id = list_web_id_to_unique_id(list_web_id)
+        list_id = list_web_id_to_unique_id(api_key, list_web_id)
     else:
-        list_id = list_name_to_unique_id(list_web_id)
+        list_id = list_name_to_unique_id(api_key, list_web_id)
     response: dict[str, Any] = client.lists.list_segments(list_id, count=1000)
     df = pd.DataFrame(response["segments"])  # type: ignore
     df = df[["id", "name", "member_count"]]
@@ -112,11 +120,11 @@ def get_segments(list_web_id: str) -> pd.DataFrame:
 
 
 @lru_cache
-def get_recent_campaigns(count: int = 20) -> pd.DataFrame:
+def get_recent_campaigns(api_key: MailChimpApiKey, count: int = 20) -> pd.DataFrame:
     """
     Get latest campaigns as a dataframe
     """
-    client = get_client()
+    client = get_client(api_key)
     response: dict[str, Any] = client.campaigns.list(
         count=count, sort_field="create_time", sort_dir="DESC"
     )
@@ -140,11 +148,12 @@ def get_recent_campaigns(count: int = 20) -> pd.DataFrame:
     return df
 
 
-def get_templates() -> pd.DataFrame:
+@lru_cache
+def get_templates(api_key: MailChimpApiKey) -> pd.DataFrame:
     """
     Get templates as a dataframe
     """
-    client = get_client()
+    client = get_client(api_key)
     response: dict[str, Any] = client.templates.list(count=1000)
     df = pd.DataFrame(response["templates"])
     df = df[
@@ -161,7 +170,7 @@ def get_templates() -> pd.DataFrame:
     return df
 
 
-def campaign_web_id_to_unique_id(web_id: str) -> str:
+def campaign_web_id_to_unique_id(api_key: MailChimpApiKey, web_id: str) -> str:
     """
     Convert a campaign web id to a campaign id
     """
@@ -171,7 +180,7 @@ def campaign_web_id_to_unique_id(web_id: str) -> str:
     return lookup[int(web_id)]
 
 
-def list_web_id_to_unique_id(web_id: str) -> str:
+def list_web_id_to_unique_id(api_key: MailChimpApiKey, web_id: str) -> str:
     """
     Convert a list web id to a list id
     """
@@ -182,7 +191,10 @@ def list_web_id_to_unique_id(web_id: str) -> str:
     return lookup[web_id]
 
 
-def list_name_to_unique_id(name: str) -> InternalListID:
+InternalListID = NewType("InternalListID", str)
+
+
+def list_name_to_unique_id(api_key: MailChimpApiKey, name: str) -> InternalListID:
     """
     Convert a list's human name to a unique list id
     """
@@ -193,7 +205,7 @@ def list_name_to_unique_id(name: str) -> InternalListID:
     return lookup[name]
 
 
-def segment_name_to_unique_id(list_id: str, name: str) -> int:
+def segment_name_to_unique_id(api_key: MailChimpApiKey, list_id: str, name: str) -> int:
     """
     Convert a segment's human name to a unique segment id
     """
@@ -204,7 +216,7 @@ def segment_name_to_unique_id(list_id: str, name: str) -> int:
     return lookup[name].split(":")[1]
 
 
-def template_name_to_unique_id(name: str) -> int:
+def template_name_to_unique_id(api_key: MailChimpApiKey, name: str) -> int:
     """
     Convert a template's human name to a unique template id
     """
@@ -215,12 +227,14 @@ def template_name_to_unique_id(name: str) -> int:
     return lookup[name]
 
 
-def send_test_email(campaign_web_id: str, emails: list[str]) -> bool:
+def send_test_email(
+    api_key: MailChimpApiKey, campaign_web_id: str, emails: list[str]
+) -> bool:
     """
     send a test email
     """
-    client = get_client()
-    campaign_id = campaign_web_id_to_unique_id(campaign_web_id)
+    client = get_client(api_key)
+    campaign_id = campaign_web_id_to_unique_id(api_key, campaign_web_id)
     response: requests.models.Response = client.campaigns.send_test_email(
         campaign_id, {"test_emails": emails, "send_type": "html"}
     )
@@ -228,12 +242,14 @@ def send_test_email(campaign_web_id: str, emails: list[str]) -> bool:
     return response.ok
 
 
-def schedule_campaign(camapign_web_id: str, schedule_time: datetime.datetime) -> bool:
+def schedule_campaign(
+    api_key: MailChimpApiKey, camapign_web_id: str, schedule_time: datetime.datetime
+) -> bool:
     """
     Schedule a campaign
     """
-    client = get_client()
-    campaign_id = campaign_web_id_to_unique_id(camapign_web_id)
+    client = get_client(api_key)
+    campaign_id = campaign_web_id_to_unique_id(api_key, camapign_web_id)
 
     # round to next round 15 minutes (e.g. 15, 30, 45, 60) past hour.
     current_minute = schedule_time.minute
@@ -265,10 +281,11 @@ class CategoryInfo(NamedTuple):
     interest_name_to_id: dict[str, str]
 
 
+@lru_cache
 def get_interest_group(
-    list_id: InternalListID, interest_group_label: str
+    api_key: MailChimpApiKey, list_id: InternalListID, interest_group_label: str
 ) -> CategoryInfo:
-    client = get_client()
+    client = get_client(api_key)
     options = client.lists.get_list_interest_categories(list_id)["categories"]
     options = [option for option in options if option["title"] == interest_group_label][
         0
@@ -285,34 +302,37 @@ def get_interest_group(
 
 
 def get_member_from_email(
-    internal_list_id: InternalListID, email: str
+    api_key: MailChimpApiKey, internal_list_id: InternalListID, email: str
 ) -> dict[str, Any]:
     # Get the member from the list
-    client = get_client()
+    client = get_client(api_key)
     user_hash = get_user_hash(email)
     return client.lists.get_list_member(internal_list_id, user_hash)
 
 
-def get_donor_tags(internal_list_id: InternalListID, email: str) -> list[str]:
+def get_donor_tags(
+    api_key: MailChimpApiKey, internal_list_id: InternalListID, email: str
+) -> list[str]:
     # Get the tags for the user
-    client = get_client()
+    client = get_client(api_key)
     user_hash = get_user_hash(email)
     details = client.lists.get_list_member_tags(internal_list_id, user_hash)
     return [x["name"] for x in details["tags"]]
 
 
 def set_donor_tags(
+    api_key: MailChimpApiKey,
     internal_list_id: InternalListID,
     email: str,
     tags_to_add: list[str] = [],
     tags_to_remove: list[str] = [],
     disable_automation: bool = False,
 ):
-    client = get_client()
+    client = get_client(api_key)
     # Set the donor status on the user
     user_hash = get_user_hash(email)
 
-    existing_tags = get_donor_tags(internal_list_id, email)
+    existing_tags = get_donor_tags(api_key, internal_list_id, email)
 
     tags_to_add = [x for x in tags_to_add if x not in existing_tags]
 
@@ -327,26 +347,28 @@ def set_donor_tags(
 
 
 def get_notes(
+    api_key: MailChimpApiKey,
     internal_list_id: InternalListID,
     email: str,
 ) -> list[str]:
-    client = get_client()
+    client = get_client(api_key)
     user_hash = get_user_hash(email)
     data = client.lists.get_list_member_notes(internal_list_id, user_hash, count=1000)
     return [x["note"] for x in data["notes"]]
 
 
 def add_user_notes(
+    api_key: MailChimpApiKey,
     internal_list_id: InternalListID,
     email: str,
     notes: list[str],
     check_existing: bool = True,
 ):
-    client = get_client()
+    client = get_client(api_key)
     user_hash = get_user_hash(email)
 
     if check_existing:
-        existing_notes = get_notes(internal_list_id, email)
+        existing_notes = get_notes(api_key, internal_list_id, email)
         notes_to_add = [note for note in notes if note not in existing_notes]
     else:
         notes_to_add = notes
@@ -357,44 +379,88 @@ def add_user_notes(
         )
 
 
+class MemberUpload(TypedDict):
+    email: str
+    merge_fields: dict[str, Any]
+
+
+def batch_add_to_interest_group(
+    api_key: MailChimpApiKey,
+    internal_list_id: InternalListID,
+    interest_group_collection: str,
+    emails: list[str],
+    interests: list[str],
+):
+    client = get_client(api_key)
+
+    avaliable_list_ids = get_interest_group(
+        api_key, internal_list_id, interest_group_collection
+    )
+
+    interests_to_add = [
+        avaliable_list_ids.interest_name_to_id[interest] for interest in interests
+    ]
+    interests_to_upload = {x: True for x in interests_to_add}
+
+    # upload all emails in list to audience id
+    items = [
+        {
+            "email_address": x,
+            "status": "subscribed",
+            "interests": interests_to_upload,
+        }
+        for x in emails
+    ]
+    client.lists.batch_list_members(internal_list_id, {"members": items})
+
+
 def set_user_metadata(
+    api_key: MailChimpApiKey,
     internal_list_id: InternalListID,
     email: str,
     merge_data: dict[str, Any] = {},
     tags: list[str] = [],
+    interest_group_collection: Optional[str] = None,
     interests: list[str] = [],
     notes: list[str] = [],
 ):
     """
     A general purpose function to set metadata for a user
     """
-    client = get_client()
+    client = get_client(api_key)
     user_hash = get_user_hash(email)
-
-    avaliable_list_ids = get_interest_group(
-        internal_list_id, "What are you interested in? Select all that apply"
-    )
-
-    interests_to_add = [
-        avaliable_list_ids.interest_name_to_id[interest] for interest in interests
-    ]
 
     details = {
         "status_if_new": "subscribed",
         "merge_fields": merge_data,
-        "interests": {x: True for x in interests_to_add},
     }
+
+    if interests:
+        avaliable_list_ids = get_interest_group(
+            api_key, internal_list_id, interest_group_collection
+        )
+
+        interests_to_add = [
+            avaliable_list_ids.interest_name_to_id[interest] for interest in interests
+        ]
+
+        details["interests"] = {x: True for x in interests_to_add}
 
     client.lists.update_list_member(internal_list_id, user_hash, details)
 
-    set_donor_tags(internal_list_id, email, tags_to_add=tags)
-    add_user_notes(internal_list_id, email, notes=notes)
+    if tags:
+        set_donor_tags(api_key, internal_list_id, email, tags_to_add=tags)
+    if notes:
+        add_user_notes(api_key, internal_list_id, email, notes=notes)
 
 
 def get_all_members(
-    internal_list_id: InternalListID, cut_off: Optional[int] = None
+    api_key: MailChimpApiKey,
+    internal_list_id: InternalListID,
+    cut_off: Optional[int] = None,
 ) -> list[dict[str, Any]]:
-    client = get_client()
+    client = get_client(api_key)
+
     # Get all the members of the list
     member_count = 1
     running_members: list[dict[str, Any]] = []
@@ -410,3 +476,137 @@ def get_all_members(
         if cut_off and len(running_members) > cut_off:
             break
     return running_members
+
+
+class MailChimpHandler:
+    """
+    Shortcut to the mailchimp api to avoid having to remember the api key
+    """
+
+    def __init__(self, api_key: str, server: str = "us9"):
+        self.api_settings = MailChimpApiKey(api_key, server)
+
+    def get_lists(self) -> pd.DataFrame:
+        return get_lists(self.api_settings)
+
+    def list_name_to_unique_id(self, name: str) -> InternalListID:
+        return list_name_to_unique_id(self.api_settings, name)
+
+    def segment_name_to_unique_id(self, list_id: str, name: str) -> int:
+        return segment_name_to_unique_id(self.api_settings, list_id, name)
+
+    def template_name_to_unique_id(self, name: str) -> int:
+        return template_name_to_unique_id(self.api_settings, name)
+
+    def get_segments(self, list_web_id: str) -> pd.DataFrame:
+        return get_segments(self.api_settings, list_web_id)
+
+    def get_recent_campaigns(self, count: int = 20) -> pd.DataFrame:
+        return get_recent_campaigns(self.api_settings, count)
+
+    def get_templates(self) -> pd.DataFrame:
+        return get_templates(self.api_settings)
+
+    def get_interest_group(
+        self, list_id: InternalListID, interest_group_label: str
+    ) -> CategoryInfo:
+        return get_interest_group(self.api_settings, list_id, interest_group_label)
+
+    def get_member_from_email(
+        self, internal_list_id: InternalListID, email: str
+    ) -> dict[str, Any]:
+        return get_member_from_email(self.api_settings, internal_list_id, email)
+
+    def get_donor_tags(self, internal_list_id: InternalListID, email: str) -> list[str]:
+        return get_donor_tags(self.api_settings, internal_list_id, email)
+
+    def get_notes(self, internal_list_id: InternalListID, email: str) -> list[str]:
+        return get_notes(self.api_settings, internal_list_id, email)
+
+    def get_all_members(
+        self, internal_list_id: InternalListID, cut_off: Optional[int] = None
+    ) -> list[dict[str, Any]]:
+        return get_all_members(self.api_settings, internal_list_id, cut_off)
+
+    def get_user_metadata(
+        self, internal_list_id: InternalListID, email: str
+    ) -> dict[str, Any]:
+        return get_member_from_email(self.api_settings, internal_list_id, email)
+
+    def set_user_metadata(
+        self,
+        internal_list_id: InternalListID,
+        email: str,
+        merge_data: dict[str, Any] = {},
+        tags: list[str] = [],
+        interest_group_collection: Optional[str] = None,
+        interests: list[str] = [],
+        notes: list[str] = [],
+    ):
+        set_user_metadata(
+            self.api_settings,
+            internal_list_id,
+            email,
+            merge_data,
+            tags,
+            interest_group_collection,
+            interests,
+            notes,
+        )
+
+    def set_donor_tags(
+        self,
+        internal_list_id: InternalListID,
+        email: str,
+        tags_to_add: list[str] = [],
+        tags_to_remove: list[str] = [],
+        disable_automation: bool = False,
+    ):
+        set_donor_tags(
+            self.api_settings,
+            internal_list_id,
+            email,
+            tags_to_add,
+            tags_to_remove,
+            disable_automation,
+        )
+
+    def add_user_notes(
+        self,
+        internal_list_id: InternalListID,
+        email: str,
+        notes: list[str],
+        check_existing: bool = True,
+    ):
+        add_user_notes(
+            self.api_settings, internal_list_id, email, notes, check_existing
+        )
+
+    def send_test_email(self, campaign_web_id: str, emails: list[str]) -> bool:
+        return send_test_email(self.api_settings, campaign_web_id, emails)
+
+    def schedule_campaign(
+        self, camapign_web_id: str, schedule_time: datetime.datetime
+    ) -> bool:
+        return schedule_campaign(self.api_settings, camapign_web_id, schedule_time)
+
+    def batch_add_to_interest_group(
+        self,
+        internal_list_id: InternalListID,
+        interest_group_collection: str,
+        emails: list[str],
+        interests: list[str],
+    ):
+        batch_add_to_interest_group(
+            self.api_settings,
+            internal_list_id,
+            interest_group_collection,
+            emails,
+            interests,
+        )
+
+    def get_user_hash(self, email: str) -> str:
+        return get_user_hash(email)
+
+    def list_web_id_to_unique_id(self, web_id: str) -> str:
+        return list_web_id_to_unique_id(self.api_settings, web_id)

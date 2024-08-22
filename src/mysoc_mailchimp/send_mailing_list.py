@@ -1,6 +1,8 @@
+import os
+
 from rich import print
 
-from mysoc_mailchimp.mailchimp import get_client
+from mysoc_mailchimp.mailchimp import MailChimpApiKey, get_client
 from mysoc_mailchimp.scraping import get_details_from_blog
 
 # Create campaign from template
@@ -37,7 +39,7 @@ def create_campaign_from_blog(
         "segment_opts": {"saved_segment_id": int(segment_id)},
     }
 
-    client = get_client()
+    client = get_client(MailChimpApiKey(os.environ["MAILCHIMP_API_KEY"], "us9"))
 
     # first time around we give it a template id so it sets the content
 
