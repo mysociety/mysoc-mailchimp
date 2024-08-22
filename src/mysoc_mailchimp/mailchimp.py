@@ -7,6 +7,7 @@ import mailchimp_marketing
 import numpy as np
 import pandas as pd
 import requests
+from mailchimp_marketing.api_client import ApiClientError
 
 
 class MailChimpApiKey(NamedTuple):
@@ -198,7 +199,7 @@ def list_name_to_unique_id(api_key: MailChimpApiKey, name: str) -> InternalListI
     """
     Convert a list's human name to a unique list id
     """
-    df = get_lists()
+    df = get_lists(api_key)
     # convert to web_id, id column dict
     df["name"] = df["name"].astype(str)
     lookup = df.set_index("name")["id"].to_dict()
@@ -338,9 +339,12 @@ def set_donor_tags(
 
     to_add_dict = [{"name": tag, "status": "active"} for tag in tags_to_add]
     to_remove_dict = [{"name": tag, "status": "inactive"} for tag in tags_to_remove]
+    to_change_list = to_add_dict + to_remove_dict
+    if len(to_change_list) == 0:
+        return
 
     details = {
-        "tags": to_add_dict + to_remove_dict,
+        "tags": to_change_list,
         "is_syncing": disable_automation,
     }
     client.lists.update_list_member_tags(internal_list_id, user_hash, details)
@@ -425,13 +429,18 @@ def set_user_metadata(
     notes: list[str] = [],
 ):
     """
-    A general purpose function to set metadata for a user
+    A general purpose function to set metadata for a user.
+    If user doesn't exist - we're creating them!
     """
     client = get_client(api_key)
     user_hash = get_user_hash(email)
 
-    details = {
-        "status_if_new": "subscribed",
+    try:
+        current_person = client.lists.get_list_member(internal_list_id, user_hash)
+    except ApiClientError:
+        current_person = None
+
+    details: dict[str, Any] = {
         "merge_fields": merge_data,
     }
 
@@ -446,10 +455,34 @@ def set_user_metadata(
 
         details["interests"] = {x: True for x in interests_to_add}
 
-    client.lists.update_list_member(internal_list_id, user_hash, details)
+    if current_person:
+        try:
+            client.lists.update_list_member(internal_list_id, user_hash, details)
+        except ApiClientError as e:
+            print(e.text)
+            raise e
+        if tags:
+            set_donor_tags(api_key, internal_list_id, email, tags_to_add=tags)
 
-    if tags:
-        set_donor_tags(api_key, internal_list_id, email, tags_to_add=tags)
+    else:
+        details["email_address"] = email
+        details["status"] = "subscribed"
+        if tags:
+            details["tags"] = tags
+        try:
+            client.lists.add_list_member(internal_list_id, details)
+        except ApiClientError as e:
+            allowed_problems = [
+                "looks fake or invalid",
+                "Forgotten Email Not Subscribed",
+                "Please provide a valid email address",
+            ]
+            for problem in allowed_problems:
+                if problem in e.text:
+                    return
+            print(e.text)
+            raise e
+
     if notes:
         add_user_notes(api_key, internal_list_id, email, notes=notes)
 
