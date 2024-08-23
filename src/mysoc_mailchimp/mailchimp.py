@@ -9,13 +9,23 @@ import pandas as pd
 import requests
 from mailchimp_marketing.api_client import ApiClientError
 
+InternalListID = NewType("InternalListID", str)
+InterestInternalId = NewType("InterestInternalId", str)
+
 
 class MailChimpApiKey(NamedTuple):
     api_key: str
     server: str
 
 
-InternalListID = NewType("InternalListID", str)
+class CategoryInfo(NamedTuple):
+    group_id: str
+    interest_name_to_id: dict[str, InterestInternalId]
+
+
+class MemberAndInterests(NamedTuple):
+    email: str
+    interests: list[InterestInternalId]
 
 
 def get_client(api_key: MailChimpApiKey) -> mailchimp_marketing.Client:  # type: ignore
@@ -192,9 +202,6 @@ def list_web_id_to_unique_id(api_key: MailChimpApiKey, web_id: str) -> str:
     return lookup[web_id]
 
 
-InternalListID = NewType("InternalListID", str)
-
-
 def list_name_to_unique_id(api_key: MailChimpApiKey, name: str) -> InternalListID:
     """
     Convert a list's human name to a unique list id
@@ -275,11 +282,6 @@ def schedule_campaign(
 def get_user_hash(email: str):
     # Convert the email to lowercase and get its MD5 hash
     return hashlib.md5(email.lower().encode("utf-8")).hexdigest()
-
-
-class CategoryInfo(NamedTuple):
-    group_id: str
-    interest_name_to_id: dict[str, str]
 
 
 @lru_cache
@@ -416,6 +418,35 @@ def batch_add_to_interest_group(
         for x in emails
     ]
     client.lists.batch_list_members(internal_list_id, {"members": items})
+
+
+def batch_add_to_different_interest_groups(
+    api_key: MailChimpApiKey,
+    internal_list_id: InternalListID,
+    emails_and_interests: list[MemberAndInterests],
+    batch_size: int = 200,
+):
+    """
+    Specify *different* interest groups for different emails.
+    """
+    client = get_client(api_key)
+
+    items: list[dict[str, Any]] = []
+
+    for email, interests in emails_and_interests:
+        items.append(
+            {
+                "email_address": email,
+                "status": "subscribed",
+                "interests": {x: True for x in interests},
+            }
+        )
+
+    # upload as batches
+    for i in range(0, len(items), batch_size):
+        client.lists.batch_list_members(
+            internal_list_id, {"members": items[i : i + 200]}
+        )
 
 
 def set_user_metadata(
@@ -622,6 +653,16 @@ class MailChimpHandler:
         self, camapign_web_id: str, schedule_time: datetime.datetime
     ) -> bool:
         return schedule_campaign(self.api_settings, camapign_web_id, schedule_time)
+
+    def batch_add_to_different_interest_groups(
+        self,
+        internal_list_id: InternalListID,
+        emails_and_interests: list[MemberAndInterests],
+        batch_size: int = 200,
+    ):
+        batch_add_to_different_interest_groups(
+            self.api_settings, internal_list_id, emails_and_interests, batch_size
+        )
 
     def batch_add_to_interest_group(
         self,
