@@ -185,7 +185,7 @@ def campaign_web_id_to_unique_id(api_key: MailChimpApiKey, web_id: str) -> str:
     """
     Convert a campaign web id to a campaign id
     """
-    df = get_recent_campaigns(1000)
+    df = get_recent_campaigns(api_key, 1000)
     # convert to web_id, id column dict
     lookup = df.set_index("web_id")["id"].to_dict()
     return lookup[int(web_id)]
@@ -195,7 +195,7 @@ def list_web_id_to_unique_id(api_key: MailChimpApiKey, web_id: str) -> str:
     """
     Convert a list web id to a list id
     """
-    df = get_lists()
+    df = get_lists(api_key)
     # convert to web_id, id column dict
     df["web_id"] = df["web_id"].astype(str)
     lookup = df.set_index("web_id")["id"].to_dict()
@@ -217,7 +217,7 @@ def segment_name_to_unique_id(api_key: MailChimpApiKey, list_id: str, name: str)
     """
     Convert a segment's human name to a unique segment id
     """
-    df = get_segments(list_id)
+    df = get_segments(api_key, list_id)
     # convert to web_id, id column dict
     df["name"] = df["name"].astype(str)
     lookup = df.set_index("name")["id"].to_dict()
@@ -228,7 +228,7 @@ def template_name_to_unique_id(api_key: MailChimpApiKey, name: str) -> int:
     """
     Convert a template's human name to a unique template id
     """
-    df = get_templates()
+    df = get_templates(api_key)
     # convert to web_id, id column dict
     df["name"] = df["name"].astype(str)
     lookup = df.set_index("name")["id"].to_dict()
