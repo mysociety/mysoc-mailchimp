@@ -29,7 +29,7 @@ python -m mysoc_mailchimp wordpress-upload --url https://docs.google.com/documen
 Can be used to automate moving a mySociety blog post into mailchimp.
 
 ```
-python -m mysoc_mailchimp convert-blog --url 'https://www.mysociety.org/2023/07/12/guest-post-does-watching-mps-make-them-behave-better/' \
+python -m mysoc_mailchimp convert-blog --url 'https://www.mysociety.org/2024/10/02/and-were-off-our-whofundsthem-project-has-restarted/' \
                                        --list "mySociety Newsletters" \
                                        --segment "Interest: Democracy" \
                                        --template "mySociety auto-blog" \
@@ -47,6 +47,6 @@ msmc send --campaign-id [new_campaign_id]
 ## Create TWFY config
 
 ```
-python -m mysoc_mailchimp --blog-url https://www.mysociety.org/2023/07/12/guest-post-does-watching-mps-make-them-behave-better/ > config.txt
+python -m mysoc_mailchimp twfy-config --blog-url https://www.mysociety.org/2024/10/02/and-were-off-our-whofundsthem-project-has-restarted/ > config.txt
 
 ```
