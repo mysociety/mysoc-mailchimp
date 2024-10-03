@@ -568,6 +568,9 @@ class MailChimpHandler:
     def get_recent_campaigns(self, count: int = 20) -> pd.DataFrame:
         return get_recent_campaigns(self.api_settings, count)
 
+    def get_recent_email_count(self, list_web_id: str, segment_id: str, days: int = 7):
+        return get_recent_email_count(self.api_settings, list_web_id, segment_id, days)
+
     def get_templates(self) -> pd.DataFrame:
         return get_templates(self.api_settings)
 
