@@ -30,7 +30,7 @@ on:
       test_email:
         description: 'Test email address to send preview to'
         required: true
-        default: 'test@mysociety.org'
+        default: 'alex@mysociety.org'
         type: string
       add_campaign:
         description: 'Add UTM campaign parameters to URL'
