@@ -1,0 +1,98 @@
+name: Move Blog to Mailchimp
+
+on:
+  workflow_dispatch:
+    inputs:
+      blog_url:
+        description: 'Blog post URL'
+        required: true
+        type: string
+      list_name:
+        description: 'Mailchimp list name'
+        required: true
+        default: 'mySociety Newsletters'
+        type: string
+      segment_name:
+        description: 'Mailchimp segment name'
+        required: true
+        default: 'Interest: Democracy'
+        type: string
+      template_name:
+        description: 'Mailchimp template name'
+        required: true
+        default: 'mySociety auto-blog'
+        type: string
+      from_name:
+        description: 'From name (leave empty to use blog author)'
+        required: false
+        default: 'mySociety'
+        type: string
+      test_email:
+        description: 'Test email address to send preview to'
+        required: true
+        default: 'test@mysociety.org'
+        type: string
+      add_campaign:
+        description: 'Add UTM campaign parameters to URL'
+        required: false
+        default: 'true'
+        type: boolean
+
+jobs:
+  convert_blog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: false
+      
+      - name: Setup
+        run: |
+          poetry install
+      
+      - name: Convert blog to Mailchimp campaign
+        id: convert_blog
+        run: |
+          # Prepare add_campaign flag
+          ADD_CAMPAIGN_FLAG=""
+          if [[ "${{ github.event.inputs.add_campaign }}" == "true" ]]; then
+            ADD_CAMPAIGN_FLAG="--add-campaign"
+          fi
+
+          # Run convert-blog command
+          OUTPUT=$(python -m mysoc_mailchimp convert-blog \
+            --url '${{ github.event.inputs.blog_url }}' \
+            --list "${{ github.event.inputs.list_name }}" \
+            --segment "${{ github.event.inputs.segment_name }}" \
+            --template "${{ github.event.inputs.template_name }}" \
+            --from-name "${{ github.event.inputs.from_name }}" \
+            --test-email "${{ github.event.inputs.test_email }}" \
+            $ADD_CAMPAIGN_FLAG)
+
+          echo "$OUTPUT"
+
+          # Extract campaign ID from output using regex
+          CAMPAIGN_ID=$(echo "$OUTPUT" | grep -oP 'https://us9.admin.mailchimp.com/campaigns/edit\?id=\K[0-9]+')
+          echo "campaign_id=$CAMPAIGN_ID" >> $GITHUB_OUTPUT
+        env:
+          MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}
+
+      - name: Output campaign details
+        run: |
+          echo "Campaign created successfully!"
+          echo "Campaign ID: ${{ steps.convert_blog.outputs.campaign_id }}"
+          echo "A test email has been sent to ${{ github.event.inputs.test_email }}"
+          echo "To send this campaign after review, run the following command:"
+          echo "python -m mysoc_mailchimp send --campaign-id ${{ steps.convert_blog.outputs.campaign_id }}"
+          echo "Or use the 'msmc' shortcut command:"
+          echo "msmc send --campaign-id ${{ steps.convert_blog.outputs.campaign_id }}"
+          echo ""
+          echo "Edit campaign in browser: https://us9.admin.mailchimp.com/campaigns/edit?id=${{ steps.convert_blog.outputs.campaign_id }}"
